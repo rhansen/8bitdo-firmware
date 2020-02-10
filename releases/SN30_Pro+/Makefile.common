@@ -1,0 +1,28 @@
+# Copyright (C) 2016 Richard Hughes <richard@hughsie.com>
+
+VENDOR=8Bitdo
+PROJECT_NAME=SN30_Pro+
+VERSION=unspecified
+FIRMWARE_FILES=$(VERSION)/Firmware_SN30_Pro+_V$(VERSION).dat
+INPUT_METAINFO_FILE=sn30pro_plus.metainfo.xml
+OUTPUT_METAINFO_FILE=$(VERSION)/metainfo.xml
+CAB=$(VERSION)/$(VENDOR)-$(PROJECT_NAME)-$(VERSION).cab
+
+all: $(CAB)
+
+clean:
+	rm -f $(CAB) $(OUTPUT_METAINFO_FILE)
+
+check: $(OUTPUT_METAINFO_FILE)
+	appstream-util validate-relax $(OUTPUT_METAINFO_FILE)
+
+$(OUTPUT_METAINFO_FILE): $(INPUT_METAINFO_FILE)
+	sed -Ee "\
+	  0,\\%<releases>% b;\
+	  \\%</releases>%,$$ b;\
+	  \\%<release( [^>]*)? version=\"$(VERSION)\"( [^>]*)?>%,\\%</release>% b;\
+	  d;\
+	" $? >$@
+
+%.cab: $(FIRMWARE_FILES) $(OUTPUT_METAINFO_FILE)
+	gcab --create --nopath $@ "$(FIRMWARE_FILES)" $(OUTPUT_METAINFO_FILE)
